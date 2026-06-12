@@ -71,7 +71,7 @@ This branch adds a working [Sentry](https://docs.sentry.io/platforms/javascript/
 | `next.config.ts`                | Wrapped with `withSentryConfig` (preserved by the Webflow Cloud builder) |
 | `src/instrumentation.ts`        | Server init + `onRequestError` capture                       |
 | `src/instrumentation-client.ts` | Browser init (logs + traces)                                 |
-| `sentry.server.config.ts`       | Server-side `Sentry.init` (runs on the Cloudflare Worker)    |
+| `sentry.server.config.ts`       | Server-side `Sentry.init` with a fetch-based transport (runs on the Cloudflare Worker) |
 | `sentry.edge.config.ts`         | Edge-runtime `Sentry.init` (middleware; unused here)         |
 | `src/app/global-error.tsx`      | Root error boundary reporting to Sentry                      |
 | `src/app/api/sentry-ping/route.ts` | Emits a server-side Sentry log on every request           |
@@ -86,7 +86,7 @@ This branch adds a working [Sentry](https://docs.sentry.io/platforms/javascript/
 
 ### Webflow Cloud / Cloudflare Workers caveats
 
-- The app runs on Cloudflare Workers (workerd), not Node. Sentry's server SDK requires the `nodejs_compat` flag **and a worker `compatibility_date` of `2025-08-16` or later** (for Node `https.request` support used by the SDK transport).
+- The app runs on Cloudflare Workers (workerd), not Node. Sentry's default server transport sends events with Node's `https.request`, which workerd only provides at `compatibility_date >= 2025-08-16` — and Webflow Cloud currently deploys workers with an older date, so out of the box **server-side events are dropped silently**. This example works around that: `sentry.server.config.ts` overrides the transport with a `fetch`-based one, which works on every compatibility date. Keep that override when adapting this setup.
 - Don't use Sentry's `tunnelRoute` option: it registers the tunnel at a fixed path that doesn't account for the mount path Webflow Cloud serves your app under.
 
 ## Customizing
