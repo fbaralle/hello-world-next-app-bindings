@@ -62,6 +62,33 @@ export async function GET() {
 
 See `src/app/api/binding-status/route.ts` for a full working example that pings all four bindings.
 
+## Sentry integration (this branch)
+
+This branch adds a working [Sentry](https://docs.sentry.io/platforms/javascript/guides/nextjs/) setup for Webflow Cloud, following the official `@sentry/nextjs` manual setup plus Sentry's [Cloudflare/OpenNext guidance](https://docs.sentry.io/platforms/javascript/guides/cloudflare/frameworks/nextjs/):
+
+| File                            | Purpose                                                      |
+| ------------------------------- | ------------------------------------------------------------ |
+| `next.config.ts`                | Wrapped with `withSentryConfig` (preserved by the Webflow Cloud builder) |
+| `src/instrumentation.ts`        | Server init + `onRequestError` capture                       |
+| `src/instrumentation-client.ts` | Browser init (logs + traces)                                 |
+| `sentry.server.config.ts`       | Server-side `Sentry.init` (runs on the Cloudflare Worker)    |
+| `sentry.edge.config.ts`         | Edge-runtime `Sentry.init` (middleware; unused here)         |
+| `src/app/global-error.tsx`      | Root error boundary reporting to Sentry                      |
+| `src/app/api/sentry-ping/route.ts` | Emits a server-side Sentry log on every request           |
+| `src/app/components/SentryPinger.tsx` | Pings the API every 30s; emits a browser-side log per round trip; buttons to trigger test errors |
+
+### Setup
+
+1. Create a Sentry project (platform: Next.js) and copy its DSN.
+2. Set `NEXT_PUBLIC_SENTRY_DSN` in your Webflow Cloud app's environment variables (it's inlined at build time into both browser and server bundles).
+3. Optional, for readable stack traces: also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` to upload source maps during the build.
+4. Deploy. Open the app and watch your Sentry project's **Logs** view: each 30s ping produces one `server:` and one `client:` log entry. Use the buttons to trigger a test error from the browser or the server.
+
+### Webflow Cloud / Cloudflare Workers caveats
+
+- The app runs on Cloudflare Workers (workerd), not Node. Sentry's server SDK requires the `nodejs_compat` flag **and a worker `compatibility_date` of `2025-08-16` or later** (for Node `https.request` support used by the SDK transport).
+- Don't use Sentry's `tunnelRoute` option: it registers the tunnel at a fixed path that doesn't account for the mount path Webflow Cloud serves your app under.
+
 ## Customizing
 
 The landing page lives in `src/app/page.tsx`. The binding status component is

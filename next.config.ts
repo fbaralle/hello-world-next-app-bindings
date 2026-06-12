@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 // User's custom Next.js configuration
 // NOTE: basePath is handled by Webflow Cloud builder
@@ -21,4 +22,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry. The Webflow Cloud builder preserves this wrapper —
+// it merges its own basePath/assetPrefix on top of the resolved config.
+// org / project / authToken are only needed for source-map upload; the
+// app builds and reports events without them.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+});

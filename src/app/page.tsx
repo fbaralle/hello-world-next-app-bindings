@@ -2,6 +2,7 @@ import Link from "next/link";
 import WebflowLogo from "./components/WebflowLogo";
 import DocCard from "./components/DocCard";
 import BindingsStatus from "./components/BindingsStatus";
+import SentryPinger from "./components/SentryPinger";
 
 const FRAMEWORK = "Next.js";
 
@@ -84,6 +85,8 @@ export default function Home() {
         </section>
 
         <BindingsStatus />
+
+        <SentryPinger />
 
         <section className="wf-cards" aria-label="Documentation">
           {DOC_LINKS.map((l) => (
